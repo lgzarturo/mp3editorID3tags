@@ -1,10 +1,19 @@
 import os
 import eyed3
+from dotenv import load_dotenv
 from eyed3.core import Date
 from eyed3.id3 import Tag
 import pprint
+from datetime import datetime
 
-dir_path = '/Users/revenatium/Downloads/music'
+from logger import Logging
+
+logging = Logging(__name__)
+
+load_dotenv()
+
+dir_path = os.getenv('DIRECTORY_PATH', None)
+logging.log.info(f'Loading directory: {dir_path}')
 
 
 def clean_filename(filename):
@@ -66,40 +75,44 @@ def get_mp3_files():
 
 
 def process():
+    start_time = datetime.now()
     index = 1
     for mp3_file_path in get_mp3_files():
-        if os.path.isfile(mp3_file_path):
-            print(f'processing: {mp3_file_path}')
-            audiofile = eyed3.load(mp3_file_path)
-            if not audiofile.tag:
-                audiofile.initTag()
-            try:
-                audiofile.tag.genre = clean(audiofile.tag.genre.name) \
-                    if audiofile.tag.genre.name is not None and audiofile.tag.genre.name != '' else 'Electronic'
-            except AttributeError as ignore:
-                audiofile.tag.genre = 'Electronic'
-            audiofile.tag.artist = clean(audiofile.tag.artist) \
-                if audiofile.tag.artist is not None and audiofile.tag.artist != '' else 'Various Artists Music Mixer'
-            audiofile.tag.album = clean(audiofile.tag.album) \
-                if audiofile.tag.album is not None and audiofile.tag.album != '' else 'Electro Music 2023'
-            audiofile.tag.recording_date = Date(int(2023))
-            audiofile.tag.track_num = index
-            audiofile.tag.title = clean(f'{str(index).zfill(5)}-{audiofile.tag.title}')
-            for comment in audiofile.tag.comments:
-                comment.text = 'lgzarturo'
-                audiofile.tag.comments.remove(comment.description)
-            # Definir una cover
-            # with open(cover_path, "rb") as cover_art:
-            #   song.tag.images.set(1, cover_art.read(), "image/jpeg")
-            audiofile.tag.save()
-            head, tail = os.path.split(mp3_file_path)
-            new_mp3_file_path = f'{head}/{clean_filename(tail)}'
-            os.rename(mp3_file_path, new_mp3_file_path)
-            print(f'new file: {new_mp3_file_path}\n')
-            index = index + 1
+        if not os.path.isfile(mp3_file_path):
+            continue
+        logging.log.info(f'Processing: {mp3_file_path}')
+        audiofile = eyed3.load(mp3_file_path)
+        if not audiofile.tag:
+            audiofile.initTag()
+        try:
+            audiofile.tag.genre = clean(audiofile.tag.genre.name) \
+                if audiofile.tag.genre.name is not None and audiofile.tag.genre.name != '' else 'Electronic'
+        except AttributeError as ignore:
+            audiofile.tag.genre = 'Electronic'
+        audiofile.tag.artist = clean(audiofile.tag.artist) \
+            if audiofile.tag.artist is not None and audiofile.tag.artist != '' else 'Various Artists Music Mixer'
+        audiofile.tag.album = clean(audiofile.tag.album) \
+            if audiofile.tag.album is not None and audiofile.tag.album != '' else 'Electro Music 2023'
+        audiofile.tag.recording_date = Date(int(2023))
+        audiofile.tag.track_num = index
+        audiofile.tag.title = clean(f'{str(index).zfill(5)}-{audiofile.tag.title}')
+        for comment in audiofile.tag.comments:
+            comment.text = 'lgzarturo'
+            audiofile.tag.comments.remove(comment.description)
+        # Definir una cover
+        # with open(cover_path, "rb") as cover_art:
+        #   song.tag.images.set(1, cover_art.read(), "image/jpeg")
+        audiofile.tag.save()
+        head, tail = os.path.split(mp3_file_path)
+        new_mp3_file_path = f'{head}/{clean_filename(tail)}'
+        os.rename(mp3_file_path, new_mp3_file_path)
+        logging.log.info(f'Filename: {new_mp3_file_path}\n')
+        index = index + 1
+    logging.elapsed_time(start_time, 'process-files')
 
 
 def read():
+    start_time = datetime.now()
     res = []
     for mp3_file_path in get_mp3_files():
         if os.path.isfile(mp3_file_path):
@@ -108,8 +121,12 @@ def read():
                 audiofile.initTag()
             res.append(MP3(audiofile.tag).dump())
     pprint.pprint(res)
+    logging.elapsed_time(start_time, 'reading-files')
 
 
 if __name__ == '__main__':
+    if dir_path is None:
+        logging.log.error('No se ha definido el directorio que se va a procesar.')
+        exit(0)
     process()
     read()
