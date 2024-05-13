@@ -1,10 +1,11 @@
 import os
+import pprint
+from datetime import datetime
+
 import eyed3
 from dotenv import load_dotenv
 from eyed3.core import Date
 from eyed3.id3 import Tag
-import pprint
-from datetime import datetime
 
 from logger import Logging
 
@@ -86,13 +87,13 @@ def process():
             audiofile.initTag()
         try:
             audiofile.tag.genre = clean(audiofile.tag.genre.name) \
-                if audiofile.tag.genre.name is not None and audiofile.tag.genre.name != '' else 'Electronic'
+                if audiofile.tag.genre.name is not None and audiofile.tag.genre.name != '' else 'Classic'
         except AttributeError as ignore:
-            audiofile.tag.genre = 'Electronic'
+            audiofile.tag.genre = 'Classic'
         audiofile.tag.artist = clean(audiofile.tag.artist) \
-            if audiofile.tag.artist is not None and audiofile.tag.artist != '' else 'Various Artists Music Mixer'
+            if audiofile.tag.artist is not None and audiofile.tag.artist != '' else 'Jose Luis Perales'
         audiofile.tag.album = clean(audiofile.tag.album) \
-            if audiofile.tag.album is not None and audiofile.tag.album != '' else 'Electro Music 2023'
+            if audiofile.tag.album is not None and audiofile.tag.album != '' else 'Éxitos de Jose Luis Perales'
         audiofile.tag.recording_date = Date(int(2023))
         audiofile.tag.track_num = index
         audiofile.tag.title = clean(f'{str(index).zfill(5)}-{audiofile.tag.title}')
